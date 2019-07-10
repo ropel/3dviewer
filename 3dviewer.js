@@ -43,8 +43,8 @@ function setObject3DMaterial(obj, mat) {
 
 /**
  * Uniformly rescales obj so that it fits in a bounding box of size(scale)
- * @param {*} obj 
- * @param {*} scale 
+ * @param {THREE.Object3D} obj 
+ * @param {float} scale 
  */
 function rescaleObject3D(obj, scale=1.0){
 	let bb = new THREE.Box3().setFromObject(obj);
@@ -64,21 +64,25 @@ function rescaleObject3D(obj, scale=1.0){
 
 /**
  * Place objects in grid of dimension gsize*gsize
- * @param {*} objs 
- * @param {*} gsize 
+ * @param {int} objs 
+ * @param {int} gsize 
  */
-function placeObjsOnGrid(objs, gsize, spacing=1.0) {
-	let initPos = new THREE.Vector3(-((gsize - 1) * spacing + gsize) / 2.0,
+function placeObjsOnGrid(objs, gsizeX, gsizeY, spacing=1.0) {
+	let initPos = new THREE.Vector3(-(gsizeX * (1.0+spacing))/2.0 + spacing/2.0 + 0.5,
 		0.0,
-		-((gsize-1)*spacing + gsize)/2.0);
+		-(gsizeY * (1.0+spacing))/2.0 + spacing/2.0 + 0.5);
 
-	for(let i=0; i<objs.length; ++i){
-		let currentPos = initPos.clone();
-		currentPos.x += (1.0+spacing) * (i % gsize);
-		currentPos.z += (1.0+spacing) * Math.floor(i / gsize);
+	for(let y=0; y<gsizeY; ++y){
+		for(let x=0; x<gsizeX; ++x){
+			let i = y*gsizeX + x
+			if (i >= objs.length) break;
+			let currentPos = initPos.clone();
+			currentPos.x += (1.0+spacing) * x;
+			currentPos.z += (1.0+spacing) * y;
 
-		objs[i].position.x = currentPos.x;
-		objs[i].position.z = currentPos.z;
+			objs[i].position.x = currentPos.x;
+			objs[i].position.z = currentPos.z;
+		}
 	}
 }
 
@@ -115,9 +119,17 @@ for(let i=0; i<nObjs; i++) {
 	loadingObjsCompleted = true;
 }
 
+
 let renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setSize( window.innerWidth, window.innerHeight );
 document.body.appendChild( renderer.domElement );
+
+window.addEventListener( 'resize', onWindowResize, false );
+function onWindowResize(){
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize( window.innerWidth, window.innerHeight );
+}
 
 //Camera control
 let orbit = new THREE.OrbitControls(camera, renderer.domElement);
@@ -135,7 +147,7 @@ function animate() {
 	requestAnimationFrame( animate );
 
 	if (loadingObjsCompleted) {
-		placeObjsOnGrid(objs, Math.round(Math.sqrt(objs.length)), 0.2)
+		placeObjsOnGrid(objs, 10, 1, 0.2)
 	}
 	renderer.render(scene, camera);
 };
